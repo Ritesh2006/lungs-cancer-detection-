@@ -1,0 +1,24 @@
+# Dependency directories
+node_modules/
+venv/
+env/
+.env
+
+# Build outputs
+dist/
+build/
+*.pyc
+__pycache__/
+
+# Large models
+*.pkl
+*.joblib
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets
+backend/.env
+frontend/.env
+ml-service/.env
