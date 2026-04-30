@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
 try:
@@ -9,6 +10,15 @@ except ImportError:
 import os
 
 app = FastAPI(title="Lung Cancer Prediction API")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Path to the model
 import pickle
@@ -111,6 +121,10 @@ async def predict_risk(data: PatientData):
 @app.get("/health")
 async def health():
     return {"status": "ok", "model_loaded": model is not None}
+
+@app.get("/")
+async def root():
+    return {"message": "Lung Cancer Prediction ML Service is running. Use /predict_risk for predictions."}
 
 if __name__ == "__main__":
     import uvicorn

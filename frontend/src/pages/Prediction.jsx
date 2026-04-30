@@ -118,7 +118,8 @@ export default function Prediction() {
     setLoading(true); setError('');
     setDir(1); setStep(4);
     try {
-      const { data } = await axios.post('http://localhost:5000/api/predict', form);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const { data } = await axios.post(`${API_URL}/predict`, form);
       setResult(data);
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.detail || 'Unable to reach the prediction server. Ensure the backend and ML service are running.';

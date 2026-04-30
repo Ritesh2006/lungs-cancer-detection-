@@ -8,7 +8,7 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000/pred
 router.post('/', async (req, res) => {
     try {
         const patientData = req.body;
-        
+
         // Basic validation
         if (!patientData || Object.keys(patientData).length === 0) {
             return res.status(400).json({ error: 'Patient data is required' });
