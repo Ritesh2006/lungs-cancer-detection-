@@ -11,7 +11,8 @@ build/
 __pycache__/
 
 # Large models
-*.pkl
+# Large models (uncomment if you use external storage like S3/LFS)
+# *.pkl
 *.joblib
 
 # OS files
