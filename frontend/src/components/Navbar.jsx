@@ -57,12 +57,12 @@ export default function Navbar() {
         <div style={{
           maxWidth: 1152,
           margin: '0 auto',
-          padding: '0 24px',
-          height: 56,
+          padding: '0 clamp(12px, 4vw, 24px)',
+          height: 60,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 16,
+          gap: 12,
         }}>
 
           {/* ── Logo ── */}
@@ -82,19 +82,19 @@ export default function Navbar() {
               </svg>
             </div>
             {/* Brand name */}
-            <div>
+            <div className="flex flex-col">
               <div style={{
-                fontSize: 15, fontWeight: 700,
+                fontSize: 15, fontWeight: 800,
                 color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
+                letterSpacing: '-0.03em',
                 lineHeight: 1.1,
               }}>
                 PulmoAI
               </div>
-              <div style={{
+              <div className="hidden sm:block" style={{
                 fontSize: 9, fontWeight: 500,
                 color: 'var(--text-muted)',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 lineHeight: 1,
               }}>
@@ -104,7 +104,7 @@ export default function Navbar() {
           </Link>
 
           {/* ── Center nav links (desktop) ── */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="hidden md:flex">
+          <nav className="hidden md:flex items-center gap-1">
             {LINKS.map(({ label, path, icon: Icon }) => {
               const active = pathname === path;
               return (
@@ -137,95 +137,53 @@ export default function Navbar() {
                     <Icon size={13} style={{ color: active ? 'var(--blue-400)' : 'inherit', flexShrink: 0 }} />
                     {label}
                   </div>
-                </Link>
               );
             })}
           </nav>
 
           {/* ── Right side controls ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
             {/* Theme toggle */}
             <motion.button
-              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={toggle}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              style={{
-                width: 34, height: 34, borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--bg-elevated)',
-                border: `1px solid ${isDark ? '#30363d' : '#d0d7de'}`,
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'background 0.12s, border-color 0.12s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-overlay)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+              className="btn-theme"
+              style={{ width: 36, height: 36, borderRadius: 10, minWidth: 36 }}
             >
               <AnimatePresence mode="wait">
                 {isDark ? (
-                  <motion.span key="sun"
-                    initial={{ opacity: 0, rotate: -30 }} animate={{ opacity: 1, rotate: 0 }}
-                    exit={{ opacity: 0, rotate: 30 }} transition={{ duration: 0.15 }}>
-                    <Sun size={15} color="#d29922" />
+                  <motion.span key="sun" initial={{ opacity: 0, rotate: -30 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 30 }}>
+                    <Sun size={16} color="#fbbf24" />
                   </motion.span>
                 ) : (
-                  <motion.span key="moon"
-                    initial={{ opacity: 0, rotate: 30 }} animate={{ opacity: 1, rotate: 0 }}
-                    exit={{ opacity: 0, rotate: -30 }} transition={{ duration: 0.15 }}>
-                    <Moon size={15} color="var(--blue-500)" />
+                  <motion.span key="moon" initial={{ opacity: 0, rotate: 30 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -30 }}>
+                    <Moon size={16} color="var(--blue-500)" />
                   </motion.span>
                 )}
               </AnimatePresence>
             </motion.button>
 
             {/* Primary CTA — desktop */}
-            <Link to="/predict" style={{ textDecoration: 'none' }} className="hidden sm:block">
-              <motion.div
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'var(--blue-600)',
-                  color: '#fff',
-                  padding: '7px 16px',
-                  borderRadius: 8,
-                  fontSize: 13, fontWeight: 600,
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 1px var(--blue-700), inset 0 1px 0 rgba(255,255,255,0.1)',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'filter 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.12)'; }}
-                onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; }}
-              >
-                <Activity size={13} />
-                Get Assessment
+            <Link to="/predict" style={{ textDecoration: 'none' }} className="hidden lg:block">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary" style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
+                <Activity size={14} /> Get Assessment
               </motion.div>
             </Link>
 
             {/* Hamburger — mobile */}
             <button
               onClick={() => setMobileOpen(v => !v)}
-              className="md:hidden"
+              className="md:hidden flex items-center justify-center"
               style={{
-                width: 34, height: 34, borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 38, height: 38, borderRadius: 10,
                 background: 'var(--bg-elevated)',
-                border: `1px solid ${isDark ? '#30363d' : '#d0d7de'}`,
-                cursor: 'pointer', color: 'var(--text-secondary)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+                minWidth: 38,
               }}
             >
-              <AnimatePresence mode="wait">
-                {mobileOpen
-                  ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                      <X size={16} />
-                    </motion.span>
-                  : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-                      <Menu size={16} />
-                    </motion.span>
-                }
-              </AnimatePresence>
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
