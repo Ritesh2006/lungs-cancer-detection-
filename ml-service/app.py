@@ -64,6 +64,7 @@ class PatientData(BaseModel):
 
 @app.post("/predict_risk")
 async def predict_risk(data: PatientData):
+    print(f"Received prediction request for Patient ID: {data.patient_id}")
     if model is None or not XGB_AVAILABLE:
         # Simulated result if model/library is missing
         import random

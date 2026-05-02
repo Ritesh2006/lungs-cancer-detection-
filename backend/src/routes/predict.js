@@ -20,8 +20,12 @@ router.post('/', async (req, res) => {
             targetUrl = targetUrl.replace(/\/$/, '') + '/predict_risk';
         }
 
+        console.log(`[Backend] Calling ML Service at: ${targetUrl}`);
+        
         // Forward request to Python ML Microservice
-        const response = await axios.post(targetUrl, patientData);
+        const response = await axios.post(targetUrl, patientData, {
+            timeout: 25000 // 25s timeout to stay within Render's 30s limit
+        });
 
         // Here you would typically save the prediction to MongoDB
 
