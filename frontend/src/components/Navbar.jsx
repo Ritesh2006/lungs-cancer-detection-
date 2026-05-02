@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, MessageSquare, Home, Menu, X, Sun, Moon } from 'lucide-react';
+import { Activity, MessageSquare, Home, Menu, X, Sun, Moon, Shield } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const LINKS = [
   { label: 'Home',       path: '/',        icon: Home },
   { label: 'Assessment', path: '/predict', icon: Activity },
-  { label: 'AI Chat',    path: '/chat',    icon: MessageSquare },
+  { label: 'AI Assistant', path: '/chat',   icon: MessageSquare },
 ];
 
 export default function Navbar() {
@@ -18,224 +18,136 @@ export default function Navbar() {
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 6);
+    const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', fn);
     return () => window.removeEventListener('scroll', fn);
   }, []);
+
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'py-2' : 'py-4'}`}>
+      
+      {/* ── Desktop Backdrop ── */}
+      <div className={`absolute inset-0 transition-all duration-300 ${scrolled ? 'backdrop-blur-xl bg-slate-900/80 border-b border-white/5' : 'bg-transparent'}`} />
 
-      {/* ── Medical disclaimer strip ── */}
-      <div style={{
-        background: isDark ? '#161b22' : '#f6f8fa',
-        borderBottom: `1px solid ${isDark ? '#21262d' : '#d0d7de'}`,
-        padding: '5px 0',
-        textAlign: 'center',
-        fontSize: 11,
-        color: isDark ? '#6e7681' : '#57606a',
-        letterSpacing: '0.01em',
-        lineHeight: 1,
-      }}>
-        ⚕&nbsp; For educational awareness only — not a substitute for professional medical diagnosis or treatment
-      </div>
-
-      {/* ── Main navigation ── */}
-      <nav style={{
-        background: scrolled
-          ? isDark ? 'rgba(13,17,23,0.97)' : 'rgba(255,255,255,0.97)'
-          : isDark ? 'rgba(13,17,23,0.88)' : 'rgba(255,255,255,0.88)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: `1px solid ${isDark ? '#21262d' : '#d0d7de'}`,
-        boxShadow: scrolled
-          ? isDark ? '0 1px 16px rgba(0,0,0,0.4)' : '0 1px 16px rgba(0,0,0,0.08)'
-          : 'none',
-        transition: 'background 0.2s, box-shadow 0.2s',
-      }}>
-        <div style={{
-          maxWidth: 1152,
-          margin: '0 auto',
-          padding: '0 clamp(12px, 4vw, 24px)',
-          height: 60,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}>
-
+      <div className="relative mobile-container">
+        <div className="flex items-center justify-between">
+          
           {/* ── Logo ── */}
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            {/* Icon */}
-            <div style={{
-              width: 32, height: 32,
-              borderRadius: 8,
-              background: 'var(--blue-600)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              {/* Lung icon as SVG */}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a2 2 0 0 0-2 2v6.5C7.5 11 5 13.5 5 17a5 5 0 0 0 10 0V4a2 2 0 0 0-2-2z"/>
-                <path d="M12 2a2 2 0 0 1 2 2v6.5c2.5.5 5 3 5 6.5a5 5 0 0 1-10 0V4a2 2 0 0 1 2-2z"/>
-              </svg>
+          <Link to="/" className="flex items-center gap-3 no-underline group">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+              <Shield size={22} className="text-white fill-white/10" />
             </div>
-            {/* Brand name */}
             <div className="flex flex-col">
-              <div style={{
-                fontSize: 15, fontWeight: 800,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.1,
-              }}>
-                PulmoAI
-              </div>
-              <div className="hidden sm:block" style={{
-                fontSize: 9, fontWeight: 500,
-                color: 'var(--text-muted)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                lineHeight: 1,
-              }}>
-                Lung Health
-              </div>
+              <span className="font-extrabold text-xl tracking-tight text-white leading-none">Pulmo<span className="text-blue-400">AI</span></span>
+              <span className="hidden xs:block text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Clinical Diagnostics</span>
             </div>
           </Link>
 
-          {/* ── Center nav links (desktop) ── */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* ── Desktop Nav ── */}
+          <nav className="hidden md:flex items-center gap-1 bg-slate-950/40 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
             {LINKS.map(({ label, path, icon: Icon }) => {
               const active = pathname === path;
               return (
-                <Link key={path} to={path} style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: active ? 'var(--bg-elevated)' : 'transparent',
-                    borderBottom: `2px solid ${active ? 'var(--blue-500)' : 'transparent'}`,
-                    transition: 'all 0.12s',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'var(--bg-surface)';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
+                <Link key={path} to={path} className="no-underline">
+                  <motion.div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      active ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
                   >
-                    <Icon size={13} style={{ color: active ? 'var(--blue-400)' : 'inherit', flexShrink: 0 }} />
+                    <Icon size={16} />
                     {label}
-                  </div>
+                  </motion.div>
+                </Link>
               );
             })}
           </nav>
 
-          {/* ── Right side controls ── */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-
-            {/* Theme toggle */}
-            <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          {/* ── Right Actions ── */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
+            {/* Theme Toggle */}
+            <button 
               onClick={toggle}
-              className="btn-theme"
-              style={{ width: 36, height: 36, borderRadius: 10, minWidth: 36 }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:border-white/20 transition-all duration-300"
             >
-              <AnimatePresence mode="wait">
-                {isDark ? (
-                  <motion.span key="sun" initial={{ opacity: 0, rotate: -30 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 30 }}>
-                    <Sun size={16} color="#fbbf24" />
-                  </motion.span>
-                ) : (
-                  <motion.span key="moon" initial={{ opacity: 0, rotate: 30 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -30 }}>
-                    <Moon size={16} color="var(--blue-500)" />
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
 
-            {/* Primary CTA — desktop */}
-            <Link to="/predict" style={{ textDecoration: 'none' }} className="hidden lg:block">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary" style={{ height: 36, padding: '0 16px', fontSize: 13 }}>
-                <Activity size={14} /> Get Assessment
-              </motion.div>
+            {/* Assessment Button (Desktop) */}
+            <Link to="/predict" className="hidden lg:block no-underline">
+              <button className="btn-premium px-5 py-2.5 h-10 min-h-0 text-xs uppercase tracking-widest">
+                Get Started
+              </button>
             </Link>
 
-            {/* Hamburger — mobile */}
-            <button
-              onClick={() => setMobileOpen(v => !v)}
-              className="md:hidden flex items-center justify-center"
-              style={{
-                width: 38, height: 38, borderRadius: 10,
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-default)',
-                color: 'var(--text-secondary)',
-                minWidth: 38,
-              }}
+            {/* Mobile Menu Trigger */}
+            <button 
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden w-11 h-11 rounded-xl flex items-center justify-center bg-blue-600/10 border border-blue-500/20 text-blue-400"
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              <Menu size={24} />
             </button>
           </div>
         </div>
+      </div>
 
-        {/* ── Mobile dropdown ── */}
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: 'easeInOut' }}
-              style={{
-                overflow: 'hidden',
-                borderTop: `1px solid ${isDark ? '#21262d' : '#d0d7de'}`,
-                background: isDark ? '#161b22' : '#f6f8fa',
-              }}
+      {/* ── Mobile Menu Overlay ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60]"
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-[360px] bg-slate-900 z-[70] border-l border-white/5 shadow-2xl p-6 flex flex-col"
             >
-              <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div className="flex items-center justify-between mb-10">
+                <span className="font-extrabold text-xl text-white">Menu</span>
+                <button 
+                  onClick={() => setMobileOpen(false)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 text-slate-400"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3">
                 {LINKS.map(({ label, path, icon: Icon }) => {
                   const active = pathname === path;
                   return (
-                    <Link key={path} to={path} style={{ textDecoration: 'none' }}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 14px', borderRadius: 8,
-                        fontSize: 13, fontWeight: active ? 600 : 400,
-                        color: active ? 'var(--blue-400)' : 'var(--text-secondary)',
-                        background: active ? 'rgba(31,111,235,0.08)' : 'transparent',
-                        borderLeft: `3px solid ${active ? 'var(--blue-500)' : 'transparent'}`,
-                      }}>
-                        <Icon size={14} /> {label}
+                    <Link key={path} to={path} onClick={() => setMobileOpen(false)} className="no-underline">
+                      <div className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${
+                        active ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-white/5 text-slate-400'
+                      }`}>
+                        <Icon size={20} />
+                        <span className="font-bold">{label}</span>
                       </div>
                     </Link>
                   );
                 })}
-                {/* Mobile CTA */}
-                <Link to="/predict" style={{ textDecoration: 'none', marginTop: 8 }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    padding: '11px 16px', borderRadius: 8,
-                    background: 'var(--blue-600)', color: '#fff',
-                    fontSize: 13, fontWeight: 600,
-                  }}>
-                    <Activity size={14} /> Get Assessment
-                  </div>
+              </div>
+
+              <div className="mt-auto space-y-4">
+                <div className="p-5 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-center">
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Privacy Protected</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Your data never leaves your device. All processing is local.</p>
+                </div>
+                <Link to="/predict" onClick={() => setMobileOpen(false)} className="no-underline">
+                  <button className="btn-premium w-full py-4 uppercase tracking-[0.15em] text-xs">
+                    Start Assessment
+                  </button>
                 </Link>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
