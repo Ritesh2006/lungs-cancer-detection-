@@ -9,16 +9,15 @@ export default function Footer() {
       background: 'var(--bg-surface)',
       marginTop: 'auto',
     }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:40, marginBottom:32 }}
-          className="grid-cols-1 sm:grid-cols-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        {/* Main footer grid */}
+        <div className="footer-grid">
 
           {/* Brand */}
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
               <div style={{
-                width: 24, height: 24,
-                borderRadius: 6,
+                width: 24, height: 24, borderRadius: 6,
                 background: 'var(--blue-600)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
@@ -30,7 +29,7 @@ export default function Footer() {
               </div>
               <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>PulmoAI</span>
             </div>
-            <p style={{ fontSize:12, color:'var(--text-muted)', lineHeight:1.6, maxWidth:280 }}>
+            <p style={{ fontSize:12, color:'var(--text-muted)', lineHeight:1.65, maxWidth:280 }}>
               An open-source lung cancer risk assessment tool built with XGBoost and LLaMA 3.
               For educational use only — not a medical diagnostic device.
             </p>
@@ -41,14 +40,15 @@ export default function Footer() {
             <div style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:12 }}>
               Platform
             </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {[
-                { to:'/predict', icon:<Activity size={12}/>, label:'Risk Assessment' },
-                { to:'/chat',    icon:<MessageSquare size={12}/>, label:'AI Assistant' },
+                { to:'/predict', icon:<Activity size={13}/>, label:'Risk Assessment' },
+                { to:'/chat',    icon:<MessageSquare size={13}/>, label:'AI Assistant' },
               ].map(({ to, icon, label }) => (
                 <Link key={to} to={to} style={{
-                  display:'flex', alignItems:'center', gap:6, fontSize:12,
+                  display:'flex', alignItems:'center', gap:8, fontSize:13,
                   color:'var(--text-secondary)', textDecoration:'none', transition:'color 0.12s',
+                  padding: '4px 0',
                 }}
                 onMouseEnter={e=>e.currentTarget.style.color='var(--text-primary)'}
                 onMouseLeave={e=>e.currentTarget.style.color='var(--text-secondary)'}
@@ -64,7 +64,7 @@ export default function Footer() {
             <div style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:12 }}>
               Medical Notice
             </div>
-            <p style={{ fontSize:11, color:'var(--text-muted)', lineHeight:1.65 }}>
+            <p style={{ fontSize:12, color:'var(--text-muted)', lineHeight:1.7 }}>
               Results from this tool are not a clinical diagnosis.
               Always consult a licensed healthcare professional regarding
               your symptoms and medical history.

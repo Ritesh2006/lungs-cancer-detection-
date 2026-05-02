@@ -13,9 +13,9 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 const STEPS = [
   { id: 1, label: 'Demographics', short: '01', icon: <User size={15} /> },
-  { id: 2, label: 'Lifestyle',    short: '02', icon: <Cigarette size={15} /> },
-  { id: 3, label: 'Symptoms',    short: '03', icon: <HeartPulse size={15} /> },
-  { id: 4, label: 'Results',     short: '04', icon: <TrendingUp size={15} /> },
+  { id: 2, label: 'Risk Factors',  short: '02', icon: <Activity size={15} /> },
+  { id: 3, label: 'Lifestyle',    short: '03', icon: <Cigarette size={15} /> },
+  { id: 4, label: 'Results',      short: '04', icon: <TrendingUp size={15} /> },
 ];
 
 /* ── Progress Bar ── */
@@ -70,20 +70,22 @@ const StepBar = ({ current }) => (
 const ToggleBox = ({ name, value, onChange, label }) => (
   <div
     onClick={() => onChange({ target: { name, value: value === 1 ? 0 : 1 } })}
-    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer select-none transition-all duration-150"
+    className="flex items-center gap-3 rounded-lg border cursor-pointer select-none transition-all duration-150"
     style={{
+      padding: '12px 14px',
+      minHeight: 52,
       border: value === 1 ? '1px solid rgba(59,130,246,0.4)' : '1px solid var(--border-default)',
       background: value === 1 ? 'rgba(59,130,246,0.08)' : 'var(--bg-base)',
     }}
   >
-    <div className="w-4 h-4 rounded flex items-center justify-center shrink-0 transition-all duration-150"
+    <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-all duration-150"
       style={{
         background: value === 1 ? 'var(--blue-600)' : 'var(--bg-elevated)',
         border: value === 1 ? '1px solid var(--blue-500)' : '1px solid var(--border-default)',
       }}>
-      {value === 1 && <Check size={10} className="text-white" />}
+      {value === 1 && <Check size={11} className="text-white" />}
     </div>
-    <span className="text-sm" style={{ color: value === 1 ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+    <span className="text-sm leading-snug" style={{ color: value === 1 ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
       {label}
     </span>
   </div>
@@ -106,10 +108,16 @@ export default function Prediction() {
   const [form, setForm] = useState({
     age: 50, gender: 1, smoking_history: 0,
     chest_pain: 0, shortness_of_breath: 0, fatigue: 0, weight_loss: 0,
+    radon_exposure: 'Low', asbestos_exposure: 0, secondhand_smoke: 0,
+    copd_diagnosis: 0, alcohol_consumption: 'None', family_history: 0
   });
 
-  const handleChange = e =>
-    setForm(p => ({ ...p, [e.target.name]: Number(e.target.value) }));
+  const handleChange = e => {
+    const { name, value } = e.target;
+    // String fields (selects) keep their value as string; numeric fields are converted
+    const stringFields = ['radon_exposure', 'alcohol_consumption'];
+    setForm(p => ({ ...p, [name]: stringFields.includes(name) ? value : Number(value) }));
+  };
 
   const next = () => { setDir(1);  setStep(s => Math.min(s + 1, 4)); };
   const prev = () => { setDir(-1); setStep(s => Math.max(s - 1, 1)); };
@@ -146,18 +154,21 @@ export default function Prediction() {
   } : null;
 
   return (
-    <div style={{ maxWidth: 1152, margin: '0 auto', padding: '0 24px' }}>
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12 py-8 sm:py-12">
+    <div style={{ maxWidth: 1152, margin: '0 auto', padding: '0 16px' }}>
+      <style>{`
+        @media (min-width: 640px) { .pred-outer { padding: 0 24px !important; } }
+      `}</style>
+      <div className="prediction-page-grid">
         
         {/* Left Side: Form */}
         <div>
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--blue-400)' }} />
               <p className="label-overline mb-0">XGBoost v2.0 · Clinical Assessment</p>
             </div>
-            <h1 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>
+            <h1 className="text-2xl sm:text-3xl font-extrabold mb-3" style={{ color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>
               Risk Assessment
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', maxWidth: 440 }}>
@@ -225,23 +236,35 @@ export default function Prediction() {
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                        <Cigarette size={16} className="text-amber-400" />
+                        <Activity size={16} className="text-amber-400" />
                       </div>
-                      <h2 className="text-base font-bold text-white">02. Lifestyle Factors</h2>
+                      <h2 className="text-base font-bold text-white">02. Risk Factors</h2>
                     </div>
 
-                    <div>
-                      <label className="form-label">Smoking History (Pack-Years)</label>
-                      <input type="number" name="smoking_history" value={form.smoking_history}
-                        onChange={handleChange} min="0" max="200" className="form-input"
-                        placeholder="0 = never smoked" />
-                      
-                      <div className="mt-4 p-4 rounded-xl text-xs leading-relaxed"
-                        style={{ background: 'var(--bg-inset)', border: '1px solid var(--border-default)', color: 'var(--text-muted)' }}>
-                        <strong style={{ color: 'var(--blue-400)' }}>How to calculate:</strong><br />
-                        Pack-years = (packs per day) × (years smoked).<br />
-                        <span className="italic mt-1 block">Example: 1 pack daily for 20 years = 20 pack-years.</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="form-label">Radon Exposure</label>
+                        <select name="radon_exposure" value={form.radon_exposure} onChange={handleChange} className="form-select">
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
                       </div>
+                      <div>
+                        <label className="form-label">Alcohol Consumption</label>
+                        <select name="alcohol_consumption" value={form.alcohol_consumption} onChange={handleChange} className="form-select">
+                          <option value="None">None / Occasional</option>
+                          <option value="Moderate">Moderate</option>
+                          <option value="High">Frequent / High</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <ToggleBox name="family_history" value={form.family_history} onChange={handleChange} label="Family History of Lung Cancer" />
+                      <ToggleBox name="copd_diagnosis" value={form.copd_diagnosis} onChange={handleChange} label="Previous COPD Diagnosis" />
+                      <ToggleBox name="asbestos_exposure" value={form.asbestos_exposure} onChange={handleChange} label="Asbestos Exposure" />
+                      <ToggleBox name="secondhand_smoke" value={form.secondhand_smoke} onChange={handleChange} label="Secondhand Smoke Exposure" />
                     </div>
                   </motion.div>
                 )}
@@ -251,19 +274,26 @@ export default function Prediction() {
                   <motion.div key="s3" custom={dir} variants={slideVariants}
                     initial="enter" animate="center" exit="exit"
                     transition={{ duration: 0.28, ease: 'easeInOut' }}
-                    className="space-y-4"
+                    className="space-y-6"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{ background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.25)' }}>
                         <HeartPulse size={16} className="text-red-400" />
                       </div>
-                      <h2 className="text-base font-bold text-white">03. Clinical Symptoms</h2>
+                      <h2 className="text-base font-bold text-white">03. Lifestyle & Symptoms</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div>
+                      <label className="form-label">Smoking History (Pack-Years)</label>
+                      <input type="number" name="smoking_history" value={form.smoking_history}
+                        onChange={handleChange} min="0" max="200" className="form-input"
+                        placeholder="0 = never smoked" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <ToggleBox name="chest_pain"           value={form.chest_pain}           onChange={handleChange} label="Persistent Chest Pain" />
-                      <ToggleBox name="shortness_of_breath"  value={form.shortness_of_breath}  onChange={handleChange} label="Shortness of Breath (Dyspnea)" />
+                      <ToggleBox name="shortness_of_breath"  value={form.shortness_of_breath}  onChange={handleChange} label="Shortness of Breath" />
                       <ToggleBox name="fatigue"              value={form.fatigue}              onChange={handleChange} label="Chronic Fatigue" />
                       <ToggleBox name="weight_loss"          value={form.weight_loss}          onChange={handleChange} label="Unexplained Weight Loss" />
                     </div>
@@ -339,17 +369,19 @@ export default function Prediction() {
 
               {/* Navigation */}
               {step < 4 && (
-                <div className="flex justify-between items-center mt-12 pt-8 border-t border-[var(--border-default)]">
-                  <button onClick={prev} disabled={step === 1} className="btn-secondary px-6 disabled:opacity-20">
-                    <ChevronLeft size={18} /> Back
+                <div className="prediction-nav-btns flex justify-between items-center mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-[var(--border-default)] gap-3">
+                  <button onClick={prev} disabled={step === 1}
+                    className="btn-secondary px-4 sm:px-6 disabled:opacity-20" style={{ minWidth: 90 }}>
+                    <ChevronLeft size={16} /> <span className="hidden xs:inline">Back</span>
+                    <span className="xs:hidden">Back</span>
                   </button>
                   {step < 3 ? (
-                    <button onClick={next} className="btn-primary px-8">
-                      Next Step <ChevronRight size={18} />
+                    <button onClick={next} className="btn-primary px-4 sm:px-8" style={{ minWidth: 120 }}>
+                      Next <ChevronRight size={16} />
                     </button>
                   ) : (
-                    <button onClick={submit} className="btn-primary px-8">
-                      Run Analysis <Activity size={18} />
+                    <button onClick={submit} className="btn-primary px-4 sm:px-8" style={{ minWidth: 140 }}>
+                      <Activity size={16} /> <span className="hidden sm:inline">Run Analysis</span><span className="sm:hidden">Analyse</span>
                     </button>
                   )}
                 </div>

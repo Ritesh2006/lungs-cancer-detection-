@@ -45,14 +45,22 @@ except Exception as e:
 # Define the expected input schema
 # NOTE: The user must update these fields to match exactly what their XGBoost model expects
 class PatientData(BaseModel):
+    patient_id: float = 0
     age: float
-    gender: float  # 0 or 1
-    smoking_history: float # e.g., pack-years
-    chest_pain: float # 0 or 1
-    shortness_of_breath: float # 0 or 1
-    fatigue: float # 0 or 1
-    weight_loss: float # 0 or 1
-    # Add other features here
+    gender: float  # 1 for Male, 0 for Female
+    smoking_history: float # pack-years
+    chest_pain: float = 0 # 0 or 1
+    shortness_of_breath: float = 0 # 0 or 1
+    fatigue: float = 0 # 0 or 1
+    weight_loss: float = 0 # 0 or 1
+    
+    # New fields to match the XGBoost model's actual features
+    radon_exposure: str = "Low" # Low, Medium, High
+    asbestos_exposure: float = 0 # 0 or 1
+    secondhand_smoke: float = 0 # 0 or 1
+    copd_diagnosis: float = 0 # 0 or 1
+    alcohol_consumption: str = "None" # None, Moderate, High
+    family_history: float = 0 # 0 or 1
 
 @app.post("/predict_risk")
 async def predict_risk(data: PatientData):
@@ -73,16 +81,32 @@ async def predict_risk(data: PatientData):
         }
 
     try:
-        # Convert input data to format expected by XGBoost (e.g., numpy array)
+        # Map radon_exposure
+        radon_low = 1 if data.radon_exposure.lower() == "low" else 0
+        radon_med = 1 if data.radon_exposure.lower() == "medium" else 0
+        
+        # Map alcohol_consumption
+        alcohol_mod = 1 if data.alcohol_consumption.lower() == "moderate" else 0
+        
+        # Map incoming data to the 11 features expected by the XGBoost model
+        # Feature order from model.json: 
+        # 0: patient_id, 1: age, 2: pack_years, 3: gender_Male, 
+        # 4: radon_exposure_Low, 5: radon_exposure_Medium, 6: asbestos_exposure_Yes, 
+        # 7: secondhand_smoke_exposure_Yes, 8: copd_diagnosis_Yes, 
+        # 9: alcohol_consumption_Moderate, 10: family_history_Yes
+        
         input_data = np.array([[
-            data.age,
-            data.gender,
-            data.smoking_history,
-            data.chest_pain,
-            data.shortness_of_breath,
-            data.fatigue,
-            data.weight_loss,
-            0, 0, 0, 0
+            data.patient_id,            # patient_id
+            data.age,                   # age
+            data.smoking_history,       # pack_years
+            data.gender,                # gender_Male (1 for Male, 0 for Female)
+            radon_low,                  # radon_exposure_Low
+            radon_med,                  # radon_exposure_Medium
+            data.asbestos_exposure,     # asbestos_exposure_Yes
+            data.secondhand_smoke,      # secondhand_smoke_exposure_Yes
+            data.copd_diagnosis,        # copd_diagnosis_Yes
+            alcohol_mod,                # alcohol_consumption_Moderate
+            data.family_history         # family_history_Yes
         ]])
 
         # Robust prediction handling
@@ -101,13 +125,11 @@ async def predict_risk(data: PatientData):
                 ]
                 dmatrix = xgb.DMatrix(input_data, feature_names=feature_names)
                 prediction_prob = model.predict(dmatrix)[0]
-            except ValueError:
-                # If feature names mismatch, try creating DMatrix without feature names
+            except Exception as e:
+                print(f"DMatrix prediction failed: {e}")
+                # Fallback to no feature names if mismatch
                 dmatrix = xgb.DMatrix(input_data)
                 prediction_prob = model.predict(dmatrix)[0]
-            except Exception as e:
-                # Fallback for other sklearn-like objects that only have predict
-                prediction_prob = model.predict(input_data)[0]
         else:
             raise Exception("Model object does not have a recognizable predict method")
         
@@ -115,13 +137,19 @@ async def predict_risk(data: PatientData):
         if isinstance(prediction_prob, (np.ndarray, list)):
             prediction_prob = prediction_prob[0]
             
-        risk_level = "High" if prediction_prob > 0.5 else "Low"
+        # Adjust thresholds based on the model's high baseline
+        if prediction_prob > 0.85:
+            risk_level = "High"
+        elif prediction_prob > 0.70:
+            risk_level = "Medium"
+        else:
+            risk_level = "Low"
         
         return {
             "risk_score": float(prediction_prob),
             "risk_level": risk_level,
             "confidence": f"{prediction_prob * 100:.1f}%",
-            "explanation": "Based on the provided factors, the model indicates this level of risk."
+            "explanation": f"Based on the provided factors, the model indicates a {risk_level.lower()} risk level."
         }
     except Exception as e:
         import traceback
