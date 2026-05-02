@@ -22,7 +22,7 @@ app.add_middleware(
 
 # Path to the model
 import pickle
-MODEL_PATH = "best_xgb_model (1).pkl"
+MODEL_PATH = "model.json"
 model = None
 
 # Try to load the model on startup
@@ -92,10 +92,20 @@ async def predict_risk(data: PatientData):
         elif hasattr(model, 'predict'):
             # For native XGBoost Booster
             try:
-                feature_names = ["age", "gender", "smoking_history", "chest_pain", "shortness_of_breath", "fatigue", "weight_loss"]
+                # The model expects these exact feature names
+                feature_names = [
+                    "patient_id", "age", "pack_years", "gender_Male", 
+                    "radon_exposure_Low", "radon_exposure_Medium", 
+                    "asbestos_exposure_Yes", "secondhand_smoke_exposure_Yes", 
+                    "copd_diagnosis_Yes", "alcohol_consumption_Moderate", "family_history_Yes"
+                ]
                 dmatrix = xgb.DMatrix(input_data, feature_names=feature_names)
                 prediction_prob = model.predict(dmatrix)[0]
-            except:
+            except ValueError:
+                # If feature names mismatch, try creating DMatrix without feature names
+                dmatrix = xgb.DMatrix(input_data)
+                prediction_prob = model.predict(dmatrix)[0]
+            except Exception as e:
                 # Fallback for other sklearn-like objects that only have predict
                 prediction_prob = model.predict(input_data)[0]
         else:
