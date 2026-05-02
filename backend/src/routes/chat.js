@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
         res.json({ reply });
     } catch (error) {
         console.error('Chat endpoint error:', error);
-        res.status(500).json({ error: 'Failed to process chat message. Is Ollama running?' });
+        res.status(500).json({ error: 'Failed to process chat message. Please ensure your Groq API key is valid.' });
     }
 });
 

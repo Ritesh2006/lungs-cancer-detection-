@@ -13,7 +13,10 @@ const app = express();
 // Security Middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Allow any origin for ease of deployment, or fallback to localhost
+        callback(null, origin || '*');
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -29,6 +32,10 @@ app.use('/api/', limiter);
 // Routes
 app.use('/api/chat', chatRoutes);
 app.use('/api/predict', predictRoutes);
+
+// Fallback for when frontend has VITE_API_URL set to root domain instead of /api
+app.use('/chat', chatRoutes);
+app.use('/predict', predictRoutes);
 
 // Health check
 app.get('/', (req, res) => res.json({ status: 'ok', message: 'Lung Cancer Backend API is running' }));

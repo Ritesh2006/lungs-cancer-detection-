@@ -14,8 +14,14 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Patient data is required' });
         }
 
+        // Ensure the URL ends with /predict_risk
+        let targetUrl = ML_SERVICE_URL;
+        if (!targetUrl.endsWith('/predict_risk')) {
+            targetUrl = targetUrl.replace(/\/$/, '') + '/predict_risk';
+        }
+
         // Forward request to Python ML Microservice
-        const response = await axios.post(ML_SERVICE_URL, patientData);
+        const response = await axios.post(targetUrl, patientData);
 
         // Here you would typically save the prediction to MongoDB
 
@@ -28,12 +34,11 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error('Prediction API error:', error.response?.data || error.message);
-        // If ML service is down, provide a mock response for frontend development
-        if (error.code === 'ECONNREFUSED') {
-            console.error('ML Service is offline.');
-            return res.status(503).json({ error: 'ML Prediction Service is currently offline. Please start the Python service.' });
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            console.error('ML Service is offline or unreachable.');
+            return res.status(503).json({ error: 'Cannot reach the Python ML Service. If in production, please ensure ML_SERVICE_URL is set correctly in your environment variables.' });
         }
-        res.status(500).json({ error: 'Failed to generate prediction: ' + error.message });
+        res.status(500).json({ error: 'Failed to generate prediction. If in production, check if the ML service is running and ML_SERVICE_URL is correct. Detail: ' + error.message });
     }
 });
 

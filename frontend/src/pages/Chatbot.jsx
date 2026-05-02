@@ -68,7 +68,7 @@ const Bubble = ({ msg, idx }) => {
 export default function Chatbot() {
   const [messages, setMessages] = useState([{
     role: 'assistant',
-    content: "Hello! I'm PulmoAI — your educational lung health assistant powered by LLaMA 3.\n\nI can help with questions about lung cancer risk factors, symptoms, prevention, and general respiratory health.\n\nReminder: I'm not a doctor. Always seek professional medical advice for health concerns.",
+    content: "Hello! I'm PulmoAI — your educational lung health assistant.\n\nI can help with questions about lung cancer risk factors, symptoms, prevention, and general respiratory health.\n\nReminder: I'm not a doctor. Always seek professional medical advice for health concerns.",
   }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,7 +101,7 @@ export default function Chatbot() {
     } catch {
       setMessages([...updated, {
         role: 'assistant',
-        content: 'I could not connect to the AI service. Please ensure Ollama is running locally with LLaMA 3.',
+        content: 'I could not connect to the AI service. Please ensure the backend is running and the API key is configured.',
       }]);
     } finally {
       setLoading(false);
@@ -199,7 +199,7 @@ export default function Chatbot() {
             <div className="flex items-center justify-between mt-3 px-1">
               <span className="text-[10px] text-[var(--text-faint)] flex items-center gap-1.5 uppercase font-bold tracking-wider">
                 <MessageCircle size={10} className="text-blue-500" />
-                LLaMA 3 · Educational Response
+                LLaMA 3.1 · Educational Response
               </span>
               <span className="text-[10px] text-[var(--text-faint)] font-medium italic">Shift + Enter for new line</span>
             </div>
