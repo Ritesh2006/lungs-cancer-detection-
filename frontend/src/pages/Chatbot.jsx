@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import {
   Send, Bot, User, ShieldAlert, RefreshCw,
-  MessageCircle, Lightbulb, Stethoscope, Clock, ChevronDown, Shield, Trash2
+  MessageCircle, Lightbulb, Stethoscope, Clock, ChevronDown, Shield, Trash2, ChevronRight
 } from 'lucide-react';
 
 const SUGGESTIONS = [

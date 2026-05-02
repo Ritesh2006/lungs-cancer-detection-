@@ -6,7 +6,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import {
   User, Cigarette, HeartPulse, TrendingUp,
   ChevronRight, ChevronLeft, CheckCircle2, Loader2,
-  AlertTriangle, RotateCcw, ShieldAlert, Check, Activity, Info
+  AlertTriangle, RotateCcw, ShieldAlert, Check, Activity, Info, Shield
 } from 'lucide-react';
 
 ChartJS.register(ArcElement, Tooltip, Legend);

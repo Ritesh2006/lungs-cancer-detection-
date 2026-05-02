@@ -6,18 +6,14 @@
       "use": "@vercel/vite"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/assets/(.*)",
-      "dest": "frontend/dist/assets/$1"
+      "source": "/api/(.*)",
+      "destination": "https://lung-cancer-backend.onrender.com/api/$1"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "https://lung-cancer-backend.onrender.com/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
