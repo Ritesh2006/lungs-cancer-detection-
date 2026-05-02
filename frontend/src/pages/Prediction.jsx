@@ -18,6 +18,15 @@ const STEPS = [
   { id: 4, label: 'Result',     icon: <TrendingUp size={16} /> },
 ];
 
+const IMGS = {
+  hero:    '/assets/futuristic_hero_1777367374271.png',
+  doctor:  '/assets/futuristic_health_form_1777367398853.png',
+  xray:    '/assets/futuristic_risk_prediction_1777367415013.png',
+  consult: '/assets/futuristic_ai_assistant_1777367433784.png',
+  lab:     '/assets/futuristic_privacy_1777367452810.png',
+  team:    '/assets/futuristic_disclaimer_1777367469296.png',
+};
+
 const ToggleBox = ({ name, value, onChange, label }) => (
   <div
     onClick={() => onChange({ target: { name, value: value === 1 ? 0 : 1 } })}
