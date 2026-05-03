@@ -60,7 +60,7 @@ export default function Prediction() {
   const [status, setStatus]   = useState({ backend: 'checking', ml: 'checking' });
 
   const [form, setForm] = useState({
-    age: 50, gender: 1, smoking_history: 0,
+    age: '', gender: 1, smoking_history: '',
     chest_pain: 0, shortness_of_breath: 0, fatigue: 0, weight_loss: 0,
     radon_exposure: 'Low', asbestos_exposure: 0, secondhand_smoke: 0,
     copd_diagnosis: 0, alcohol_consumption: 'None', family_history: 0
@@ -86,7 +86,25 @@ export default function Prediction() {
   const handleChange = e => {
     const { name, value } = e.target;
     const stringFields = ['radon_exposure', 'alcohol_consumption'];
-    setForm(p => ({ ...p, [name]: stringFields.includes(name) ? value : Number(value) }));
+    const isString = stringFields.includes(name);
+    
+    // For numeric fields, allow empty string but convert valid numbers
+    if (!isString) {
+      if (value === '') {
+        setForm(p => ({ ...p, [name]: '' }));
+      } else {
+        setForm(p => ({ ...p, [name]: Number(value) }));
+      }
+    } else {
+      setForm(p => ({ ...p, [name]: value }));
+    }
+  };
+
+  const clearZero = e => {
+    if (e.target.value === '0') {
+      const { name } = e.target;
+      setForm(p => ({ ...p, [name]: '' }));
+    }
   };
 
   const next = () => { setDir(1);  setStep(s => Math.min(s + 1, 4)); };
@@ -96,7 +114,12 @@ export default function Prediction() {
     setLoading(true); setError('');
     setDir(1); setStep(4);
     try {
-      const { data } = await axios.post(`${API_URL}/predict`, form);
+      // Final conversion of empty fields to 0 before sending
+      const finalForm = { ...form };
+      if (finalForm.age === '') finalForm.age = 0;
+      if (finalForm.smoking_history === '') finalForm.smoking_history = 0;
+
+      const { data } = await axios.post(`${API_URL}/predict`, finalForm);
       setResult(data);
     } catch (err) {
       setError('Unable to connect to analysis engine. Please try again.');
@@ -192,7 +215,7 @@ export default function Prediction() {
                       <div className="space-y-6">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Patient Age</label>
-                          <input type="number" name="age" value={form.age} onChange={handleChange} className="input-premium" />
+                          <input type="number" name="age" value={form.age} onChange={handleChange} onFocus={clearZero} placeholder="Enter age" className="input-premium" />
                         </div>
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Biological Gender</label>
@@ -231,7 +254,7 @@ export default function Prediction() {
                       <div className="space-y-6">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Smoking History (Pack-Years)</label>
-                          <input type="number" name="smoking_history" value={form.smoking_history} onChange={handleChange} className="input-premium" />
+                          <input type="number" name="smoking_history" value={form.smoking_history} onChange={handleChange} onFocus={clearZero} placeholder="0" className="input-premium" />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <ToggleBox name="chest_pain" value={form.chest_pain} onChange={handleChange} label="Chest Pain" />
