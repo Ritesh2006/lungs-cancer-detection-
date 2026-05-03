@@ -57,11 +57,20 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error('Prediction API error:', error.response?.data || error.message);
+        
+        // Handle validation errors from ML service (Pydantic)
+        if (error.response?.status === 422) {
+            return res.status(422).json({ 
+                error: 'Invalid input data provided.', 
+                detail: error.response.data.detail 
+            });
+        }
+
         if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
             console.error('ML Service is offline or unreachable.');
             return res.status(503).json({ error: 'Cannot reach the Python ML Service. If in production, please ensure ML_SERVICE_URL is set correctly in your environment variables.' });
         }
-        res.status(500).json({ error: 'Failed to generate prediction. If in production, check if the ML service is running and ML_SERVICE_URL is correct. Detail: ' + error.message });
+        res.status(500).json({ error: 'Failed to generate prediction. Detail: ' + (error.response?.data?.error || error.message) });
     }
 });
 

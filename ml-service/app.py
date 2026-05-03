@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import numpy as np
 import os
 import traceback
@@ -51,11 +50,13 @@ def load_model():
 # Load model on startup
 load_model()
 
+from pydantic import BaseModel, Field, validator
+
 class PatientData(BaseModel):
     patient_id: float = 0
-    age: float
+    age: float = Field(..., ge=0, le=100)
     gender: float  # 1 for Male, 0 for Female
-    smoking_history: float # pack-years
+    smoking_history: float = Field(..., ge=0) # pack-years
     chest_pain: float = 0 # 0 or 1
     shortness_of_breath: float = 0 # 0 or 1
     fatigue: float = 0 # 0 or 1
@@ -135,18 +136,31 @@ async def predict_risk(data: PatientData):
         else:
             prediction_prob = float(prediction)
             
-        # Calibration (Base score in model.json was ~0.68)
-        if prediction_prob > 0.85:
+        # Calibration (Base score in model.json is 0.687275)
+        # To make it start from 0%, we normalize relative to this baseline
+        BASE_SCORE = 0.687275
+        if prediction_prob >= BASE_SCORE:
+            # Scale from 0 to 1 between BASE_SCORE and 1.0
+            calibrated_score = (prediction_prob - BASE_SCORE) / (1.0 - BASE_SCORE)
+        else:
+            # If for some reason it's below baseline, keep it near 0
+            calibrated_score = 0.0
+            
+        # Ensure it stays within [0, 1]
+        calibrated_score = max(0.0, min(1.0, calibrated_score))
+
+        # Thresholds adjusted for calibrated score
+        if calibrated_score > 0.85:
             risk_level = "High"
-        elif prediction_prob > 0.70:
+        elif calibrated_score > 0.40: # Adjusted from 0.70 raw
             risk_level = "Medium"
         else:
             risk_level = "Low"
         
         return {
-            "risk_score": prediction_prob,
+            "risk_score": calibrated_score,
             "risk_level": risk_level,
-            "confidence": f"{prediction_prob * 100:.1f}%",
+            "confidence": f"{calibrated_score * 100:.1f}%",
             "explanation": f"Based on the provided factors, the model indicates a {risk_level.lower()} risk level."
         }
     except Exception as e:

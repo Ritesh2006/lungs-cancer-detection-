@@ -107,10 +107,26 @@ export default function Prediction() {
     }
   };
 
-  const next = () => { setDir(1);  setStep(s => Math.min(s + 1, 4)); };
-  const prev = () => { setDir(-1); setStep(s => Math.max(s - 1, 1)); };
+  const next = () => { 
+    if (step === 1) {
+      if (form.age === '' || form.age < 0 || form.age > 100) {
+        setError('Please enter a valid age between 0 and 100.');
+        return;
+      }
+    }
+    setError('');
+    setDir(1);  
+    setStep(s => Math.min(s + 1, 4)); 
+  };
+
+  const prev = () => { setError(''); setDir(-1); setStep(s => Math.max(s - 1, 1)); };
 
   const submit = async () => {
+    if (form.smoking_history < 0) {
+      setError('Smoking history cannot be negative.');
+      return;
+    }
+    
     setLoading(true); setError('');
     setDir(1); setStep(4);
     try {
@@ -122,7 +138,7 @@ export default function Prediction() {
       const { data } = await axios.post(`${API_URL}/predict`, finalForm);
       setResult(data);
     } catch (err) {
-      setError('Unable to connect to analysis engine. Please try again.');
+      setError(err.response?.data?.detail?.[0]?.msg || 'Unable to connect to analysis engine. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -215,7 +231,20 @@ export default function Prediction() {
                       <div className="space-y-6">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Patient Age</label>
-                          <input type="number" name="age" value={form.age} onChange={handleChange} onFocus={clearZero} placeholder="Enter age" className="input-premium" />
+                          <input 
+                            type="number" 
+                            name="age" 
+                            value={form.age} 
+                            onChange={handleChange} 
+                            onFocus={clearZero} 
+                            placeholder="Enter age (0-100)" 
+                            min="0" 
+                            max="100"
+                            className="input-premium" 
+                          />
+                          {form.age !== '' && (form.age < 0 || form.age > 100) && (
+                            <p className="text-[10px] text-red-500 mt-2 font-bold uppercase tracking-tight">Age must be between 0 and 100</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Biological Gender</label>
@@ -254,7 +283,19 @@ export default function Prediction() {
                       <div className="space-y-6">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-3">Smoking History (Pack-Years)</label>
-                          <input type="number" name="smoking_history" value={form.smoking_history} onChange={handleChange} onFocus={clearZero} placeholder="0" className="input-premium" />
+                          <input 
+                            type="number" 
+                            name="smoking_history" 
+                            value={form.smoking_history} 
+                            onChange={handleChange} 
+                            onFocus={clearZero} 
+                            placeholder="0" 
+                            min="0"
+                            className="input-premium" 
+                          />
+                          {form.smoking_history !== '' && form.smoking_history < 0 && (
+                            <p className="text-[10px] text-red-500 mt-2 font-bold uppercase tracking-tight">Value cannot be negative</p>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <ToggleBox name="chest_pain" value={form.chest_pain} onChange={handleChange} label="Chest Pain" />
