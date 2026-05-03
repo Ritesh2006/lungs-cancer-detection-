@@ -37,9 +37,40 @@ app.use('/api/predict', predictRoutes);
 app.use('/chat', chatRoutes);
 app.use('/predict', predictRoutes);
 
-// Health check
+// Health checks
+const axios = require('axios');
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+
+app.get('/api/status', async (req, res) => {
+    const status = {
+        backend: 'ok',
+        ml_service: 'offline',
+        model_loaded: false,
+        db_connection: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    };
+
+    try {
+        // Try to reach ML service health endpoint
+        let targetUrl = ML_SERVICE_URL;
+        if (!targetUrl.endsWith('/health')) {
+            targetUrl = targetUrl.replace(/\/$/, '') + '/health';
+        }
+        
+        const mlRes = await axios.get(targetUrl, { timeout: 5000 });
+        status.ml_service = 'online';
+        status.model_loaded = mlRes.data.model_loaded || false;
+    } catch (err) {
+        console.error('[Status Check] ML Service unreachable:', err.message);
+    }
+
+    res.json(status);
+});
+
+// Fallback for /status
+app.get('/status', (req, res) => res.redirect('/api/status'));
+
 app.get('/', (req, res) => res.json({ status: 'ok', message: 'Lung Cancer Backend API is running' }));
-app.get('/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running', db: mongoose.connection.readyState }));
 
 const PORT = process.env.PORT || 5000;
 

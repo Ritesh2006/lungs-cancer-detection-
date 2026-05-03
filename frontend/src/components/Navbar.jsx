@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, MessageSquare, Home, Menu, X, Sun, Moon, Shield } from 'lucide-react';
+import { Activity, MessageSquare, Home, Menu, X, Sun, Moon, Shield, Wifi, WifiOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import axios from 'axios';
 
 const LINKS = [
   { label: 'Home',       path: '/',        icon: Home },
@@ -15,13 +16,38 @@ export default function Navbar() {
   const { theme, toggle } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [status, setStatus] = useState('checking'); // checking, online, partial, offline
   const isDark = theme === 'dark';
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', fn);
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
+    
+    const checkStatus = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/status`);
+        if (data.backend === 'ok' && data.ml_service === 'online' && data.model_loaded) {
+          setStatus('online');
+        } else if (data.backend === 'ok') {
+          setStatus('partial');
+        } else {
+          setStatus('offline');
+        }
+      } catch {
+        setStatus('offline');
+      }
+    };
+
+    checkStatus();
+    const timer = setInterval(checkStatus, 30000);
+    
+    return () => {
+      window.removeEventListener('scroll', fn);
+      clearInterval(timer);
+    };
+  }, [API_URL]);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -35,15 +61,29 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           
           {/* ── Logo ── */}
-          <Link to="/" className="flex items-center gap-3 no-underline group">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
-              <Shield size={22} className="text-white fill-white/10" />
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-3 no-underline group">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+                <Shield size={22} className="text-white fill-white/10" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-xl tracking-tight text-white leading-none">Pulmo<span className="text-blue-400">AI</span></span>
+                <span className="hidden xs:block text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Clinical Diagnostics</span>
+              </div>
+            </Link>
+
+            {/* Service Link Indicator */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                status === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 
+                status === 'partial' ? 'bg-yellow-500' : 
+                status === 'checking' ? 'bg-slate-500 animate-pulse' : 'bg-red-500'
+              }`} />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {status === 'online' ? 'ML Core Linked' : status === 'partial' ? 'Base Online' : status === 'checking' ? 'Syncing...' : 'Link Severed'}
+              </span>
             </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-xl tracking-tight text-white leading-none">Pulmo<span className="text-blue-400">AI</span></span>
-              <span className="hidden xs:block text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Clinical Diagnostics</span>
-            </div>
-          </Link>
+          </div>
 
           {/* ── Desktop Nav ── */}
           <nav className="hidden md:flex items-center gap-1 bg-slate-950/40 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
@@ -135,8 +175,14 @@ export default function Navbar() {
 
               <div className="mt-auto space-y-4">
                 <div className="p-5 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-center">
-                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Privacy Protected</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">Your data never leaves your device. All processing is local.</p>
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">System Status</p>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className={`w-2 h-2 rounded-full ${status === 'online' ? 'bg-green-500 animate-pulse' : status === 'partial' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                      {status === 'online' ? 'ML Neural Core Active' : status === 'partial' ? 'Base System Ready' : 'Connection Failure'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed italic">Verified link between frontend and prediction microservices.</p>
                 </div>
                 <Link to="/predict" onClick={() => setMobileOpen(false)} className="no-underline">
                   <button className="btn-premium w-full py-4 uppercase tracking-[0.15em] text-xs">

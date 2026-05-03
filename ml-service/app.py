@@ -2,12 +2,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
+import os
+import pickle
+import traceback
+
 try:
     import xgboost as xgb
     XGB_AVAILABLE = True
 except ImportError:
     XGB_AVAILABLE = False
-import os
 
 app = FastAPI(title="Lung Cancer Prediction API")
 
@@ -20,30 +23,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Path to the model
-import pickle
-MODEL_PATH = "model.json"
+# Configuration
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_JSON_PATH = os.path.join(BASE_DIR, "model.json")
+MODEL_PKL_PATH = os.path.join(BASE_DIR, "best_xgb_model (1).pkl")
+
 model = None
+model_source = None
 
-# Try to load the model on startup
-try:
-    if XGB_AVAILABLE and os.path.exists(MODEL_PATH):
-        if MODEL_PATH.endswith('.pkl'):
-            with open(MODEL_PATH, 'rb') as f:
-                model = pickle.load(f)
-            print(f"Successfully loaded model from {MODEL_PATH} using pickle")
-        else:
+def load_model():
+    global model, model_source
+    if not XGB_AVAILABLE:
+        print("CRITICAL: XGBoost library not found.")
+        return
+
+    # Try JSON first (more portable)
+    if os.path.exists(MODEL_JSON_PATH):
+        try:
             model = xgb.Booster()
-            model.load_model(MODEL_PATH)
-            print(f"Successfully loaded model from {MODEL_PATH}")
-    else:
-        status = "XGBoost not installed" if not XGB_AVAILABLE else "Model file not found"
-        print(f"Warning: {status}. Running in simulated mode.")
-except Exception as e:
-    print(f"Error loading model: {e}")
+            model.load_model(MODEL_JSON_PATH)
+            model_source = "JSON"
+            print(f"Successfully loaded model from {MODEL_JSON_PATH}")
+            return
+        except Exception as e:
+            print(f"Error loading JSON model: {e}")
 
-# Define the expected input schema
-# NOTE: The user must update these fields to match exactly what their XGBoost model expects
+    # Try Pickle as fallback
+    if os.path.exists(MODEL_PKL_PATH):
+        try:
+            with open(MODEL_PKL_PATH, 'rb') as f:
+                model = pickle.load(f)
+            model_source = "Pickle"
+            print(f"Successfully loaded model from {MODEL_PKL_PATH} using pickle")
+            return
+        except Exception as e:
+            print(f"Error loading Pickle model: {e}")
+
+    print("Warning: No model files found or failed to load. Running in simulated mode.")
+
+# Load model on startup
+load_model()
+
 class PatientData(BaseModel):
     patient_id: float = 0
     age: float
@@ -53,8 +73,6 @@ class PatientData(BaseModel):
     shortness_of_breath: float = 0 # 0 or 1
     fatigue: float = 0 # 0 or 1
     weight_loss: float = 0 # 0 or 1
-    
-    # New fields to match the XGBoost model's actual features
     radon_exposure: str = "Low" # Low, Medium, High
     asbestos_exposure: float = 0 # 0 or 1
     secondhand_smoke: float = 0 # 0 or 1
@@ -64,9 +82,9 @@ class PatientData(BaseModel):
 
 @app.post("/predict_risk")
 async def predict_risk(data: PatientData):
-    print(f"Received prediction request for Patient ID: {data.patient_id}")
+    print(f"Prediction request for Patient ID: {data.patient_id}")
+    
     if model is None or not XGB_AVAILABLE:
-        # Simulated result if model/library is missing
         import random
         base_risk = 0.15
         if data.smoking_history > 10: base_risk += 0.4
@@ -78,7 +96,7 @@ async def predict_risk(data: PatientData):
             "risk_score": risk,
             "risk_level": "High" if risk > 0.6 else "Medium" if risk > 0.3 else "Low",
             "confidence": "Simulated",
-            "explanation": "ML Service is currently installing dependencies. This is a simulated result based on your inputs. Please try again in a few minutes for the actual model prediction."
+            "explanation": "ML Service is running in diagnostic mode. This is a simulated result based on your inputs."
         }
 
     try:
@@ -89,18 +107,19 @@ async def predict_risk(data: PatientData):
         # Map alcohol_consumption
         alcohol_mod = 1 if data.alcohol_consumption.lower() == "moderate" else 0
         
-        # Map incoming data to the 11 features expected by the XGBoost model
-        # Feature order from model.json: 
-        # 0: patient_id, 1: age, 2: pack_years, 3: gender_Male, 
-        # 4: radon_exposure_Low, 5: radon_exposure_Medium, 6: asbestos_exposure_Yes, 
-        # 7: secondhand_smoke_exposure_Yes, 8: copd_diagnosis_Yes, 
-        # 9: alcohol_consumption_Moderate, 10: family_history_Yes
+        # Feature order must match exactly what the model was trained on
+        feature_names = [
+            "patient_id", "age", "pack_years", "gender_Male", 
+            "radon_exposure_Low", "radon_exposure_Medium", 
+            "asbestos_exposure_Yes", "secondhand_smoke_exposure_Yes", 
+            "copd_diagnosis_Yes", "alcohol_consumption_Moderate", "family_history_Yes"
+        ]
         
-        input_data = np.array([[
+        input_values = [
             data.patient_id,            # patient_id
             data.age,                   # age
             data.smoking_history,       # pack_years
-            data.gender,                # gender_Male (1 for Male, 0 for Female)
+            data.gender,                # gender_Male
             radon_low,                  # radon_exposure_Low
             radon_med,                  # radon_exposure_Medium
             data.asbestos_exposure,     # asbestos_exposure_Yes
@@ -108,37 +127,28 @@ async def predict_risk(data: PatientData):
             data.copd_diagnosis,        # copd_diagnosis_Yes
             alcohol_mod,                # alcohol_consumption_Moderate
             data.family_history         # family_history_Yes
-        ]])
-
-        # Robust prediction handling
-        if hasattr(model, 'predict_proba'):
-            # For sklearn-style XGBClassifier
-            prediction_prob = model.predict_proba(input_data)[0][1]
-        elif hasattr(model, 'predict'):
-            # For native XGBoost Booster
-            try:
-                # The model expects these exact feature names
-                feature_names = [
-                    "patient_id", "age", "pack_years", "gender_Male", 
-                    "radon_exposure_Low", "radon_exposure_Medium", 
-                    "asbestos_exposure_Yes", "secondhand_smoke_exposure_Yes", 
-                    "copd_diagnosis_Yes", "alcohol_consumption_Moderate", "family_history_Yes"
-                ]
-                dmatrix = xgb.DMatrix(input_data, feature_names=feature_names)
-                prediction_prob = model.predict(dmatrix)[0]
-            except Exception as e:
-                print(f"DMatrix prediction failed: {e}")
-                # Fallback to no feature names if mismatch
-                dmatrix = xgb.DMatrix(input_data)
-                prediction_prob = model.predict(dmatrix)[0]
-        else:
-            raise Exception("Model object does not have a recognizable predict method")
+        ]
         
-        # If prediction_prob is an array/list, take the first element
-        if isinstance(prediction_prob, (np.ndarray, list)):
-            prediction_prob = prediction_prob[0]
+        input_data = np.array([input_values])
+
+        # Prediction logic based on model type
+        if model_source == "JSON" or isinstance(model, xgb.Booster):
+            dmatrix = xgb.DMatrix(input_data, feature_names=feature_names)
+            prediction = model.predict(dmatrix)
+        elif hasattr(model, 'predict_proba'):
+            # Sklearn-style
+            prediction = model.predict_proba(input_data)[:, 1]
+        else:
+            # Fallback
+            prediction = model.predict(input_data)
+        
+        # Ensure we have a scalar probability
+        if isinstance(prediction, (np.ndarray, list)):
+            prediction_prob = float(prediction[0])
+        else:
+            prediction_prob = float(prediction)
             
-        # Adjust thresholds based on the model's high baseline
+        # Calibration (Base score in model.json was ~0.68)
         if prediction_prob > 0.85:
             risk_level = "High"
         elif prediction_prob > 0.70:
@@ -147,26 +157,30 @@ async def predict_risk(data: PatientData):
             risk_level = "Low"
         
         return {
-            "risk_score": float(prediction_prob),
+            "risk_score": prediction_prob,
             "risk_level": risk_level,
             "confidence": f"{prediction_prob * 100:.1f}%",
             "explanation": f"Based on the provided factors, the model indicates a {risk_level.lower()} risk level."
         }
     except Exception as e:
-        import traceback
+        print(f"Prediction Error: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal prediction error: {str(e)}")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model_loaded": model is not None}
+    return {
+        "status": "ok", 
+        "model_loaded": model is not None, 
+        "model_source": model_source,
+        "xgboost_available": XGB_AVAILABLE
+    }
 
 @app.get("/")
 async def root():
-    return {"message": "Lung Cancer Prediction ML Service is running. Use /predict_risk for predictions."}
+    return {"message": "Lung Cancer Prediction ML Service is running."}
 
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

@@ -22,12 +22,31 @@ router.post('/', async (req, res) => {
 
         console.log(`[Backend] Calling ML Service at: ${targetUrl}`);
         
-        // Forward request to Python ML Microservice
-        const response = await axios.post(targetUrl, patientData, {
-            timeout: 25000 // 25s timeout to stay within Render's 30s limit
-        });
+        // Forward request to Python ML Microservice with retry mechanism
+        let response;
+        let retries = 3;
+        let lastError;
 
-        // Here you would typically save the prediction to MongoDB
+        while (retries > 0) {
+            try {
+                response = await axios.post(targetUrl, patientData, {
+                    timeout: 25000 // 25s timeout
+                });
+                break; // Success!
+            } catch (err) {
+                lastError = err;
+                retries--;
+                console.log(`[Backend] ML Service call failed. Retries left: ${retries}. Error: ${err.message}`);
+                if (retries > 0) {
+                    // Wait a bit before retrying (Render wakeup can take time)
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+        }
+
+        if (!response) {
+            throw lastError;
+        }
 
         res.json({
             risk_score: response.data.risk_score,

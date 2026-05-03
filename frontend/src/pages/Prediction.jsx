@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Doughnut } from 'react-chartjs-2';
@@ -6,7 +6,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import {
   User, Cigarette, HeartPulse, TrendingUp,
   ChevronRight, ChevronLeft, CheckCircle2, Loader2,
-  AlertTriangle, RotateCcw, ShieldAlert, Check, Activity, Info, Shield
+  AlertTriangle, RotateCcw, ShieldAlert, Check, Activity, Info, Shield, Server, Cpu
 } from 'lucide-react';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -57,6 +57,7 @@ export default function Prediction() {
   const [loading, setLoading] = useState(false);
   const [result, setResult]   = useState(null);
   const [error, setError]     = useState('');
+  const [status, setStatus]   = useState({ backend: 'checking', ml: 'checking' });
 
   const [form, setForm] = useState({
     age: 50, gender: 1, smoking_history: 0,
@@ -64,6 +65,23 @@ export default function Prediction() {
     radon_exposure: 'Low', asbestos_exposure: 0, secondhand_smoke: 0,
     copd_diagnosis: 0, alcohol_consumption: 'None', family_history: 0
   });
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/status`);
+        setStatus({
+          backend: data.backend === 'ok' ? 'online' : 'error',
+          ml: data.ml_service === 'online' ? (data.model_loaded ? 'ready' : 'online') : 'offline'
+        });
+      } catch (err) {
+        setStatus({ backend: 'offline', ml: 'offline' });
+      }
+    };
+    checkStatus();
+  }, [API_URL]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -78,7 +96,6 @@ export default function Prediction() {
     setLoading(true); setError('');
     setDir(1); setStep(4);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const { data } = await axios.post(`${API_URL}/predict`, form);
       setResult(data);
     } catch (err) {
@@ -91,7 +108,8 @@ export default function Prediction() {
   const reset = () => { setStep(1); setResult(null); setError(''); setDir(-1); };
 
   const riskPct = result ? Math.round(result.risk_score * 100) : 0;
-  const riskColor = result?.risk_level === 'High' ? '#ef4444' : result?.risk_level === 'Medium' ? '#f59e0b' : '#10b981';
+  const isHighRisk = result && result.risk_score > 0.85;
+  const riskColor = isHighRisk ? '#ef4444' : result?.risk_level === 'Medium' ? '#f59e0b' : '#10b981';
 
   const chartData = result ? {
     labels: ['Risk', 'Safe'],
@@ -116,12 +134,33 @@ export default function Prediction() {
             <div className="lg:col-span-7">
               
               {/* Header */}
-              <div className="mb-10">
-                <div className="flex items-center gap-2 text-blue-400 font-bold text-[10px] uppercase tracking-[0.2em] mb-3">
-                  <Shield size={14} /> Clinical Analysis Engine
+              <div className="mb-10 flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                <div>
+                  <div className="flex items-center gap-2 text-blue-400 font-bold text-[10px] uppercase tracking-[0.2em] mb-3">
+                    <Shield size={14} /> Clinical Analysis Engine
+                  </div>
+                  <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight mb-4">Risk Assessment</h1>
+                  <p className="text-slate-400 text-sm max-w-md">Complete the clinical profile to receive your AI-driven risk probability score.</p>
                 </div>
-                <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight mb-4">Risk Assessment</h1>
-                <p className="text-slate-400 text-sm max-w-md">Complete the clinical profile to receive your AI-driven risk probability score.</p>
+                
+                {/* Status Indicator */}
+                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 min-w-[140px]">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Service Infrastructure</p>
+                  <div className="flex items-center gap-2">
+                    <Server size={12} className={status.backend === 'online' ? 'text-green-500' : 'text-red-500'} />
+                    <span className="text-[10px] font-bold text-slate-300">Backend:</span>
+                    <span className={`text-[10px] font-black uppercase ${status.backend === 'online' ? 'text-green-500' : 'text-red-500'}`}>
+                      {status.backend}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Cpu size={12} className={status.ml === 'ready' ? 'text-green-500' : 'text-yellow-500'} />
+                    <span className="text-[10px] font-bold text-slate-300">ML Model:</span>
+                    <span className={`text-[10px] font-black uppercase ${status.ml === 'ready' ? 'text-green-500' : status.ml === 'online' ? 'text-yellow-500' : 'text-red-500'}`}>
+                      {status.ml}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Progress */}
@@ -231,6 +270,23 @@ export default function Prediction() {
                               <p className="text-slate-400 text-sm max-w-xs mx-auto">
                                 Based on your inputs, the model predicts a {result.risk_level.toLowerCase()} probability of clinical findings.
                               </p>
+                              
+                              {/* Blinking Warning for High Risk (>85%) */}
+                              {isHighRisk && (
+                                <motion.div
+                                  animate={{ opacity: [1, 0, 1] }}
+                                  transition={{ repeat: Infinity, duration: 0.8 }}
+                                  className="mt-6 flex flex-col items-center gap-2"
+                                >
+                                  <div className="flex items-center gap-2 text-red-500 font-black text-sm uppercase tracking-tighter">
+                                    <AlertTriangle size={20} />
+                                    PLZ CONSULT A DOCTOR IMMEDIATELY
+                                  </div>
+                                  <p className="text-[10px] text-red-400/80 max-w-[200px] leading-tight">
+                                    Your profile indicates critical factors that require professional medical attention without delay.
+                                  </p>
+                                </motion.div>
+                              )}
                             </div>
                           </div>
 
