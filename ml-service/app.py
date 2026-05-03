@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import numpy as np
 import os
-import pickle
 import traceback
 
 try:
@@ -26,7 +25,6 @@ app.add_middleware(
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_JSON_PATH = os.path.join(BASE_DIR, "model.json")
-MODEL_PKL_PATH = os.path.join(BASE_DIR, "best_xgb_model (1).pkl")
 
 model = None
 model_source = None
@@ -37,7 +35,7 @@ def load_model():
         print("CRITICAL: XGBoost library not found.")
         return
 
-    # Try JSON first (more portable)
+    # Load JSON model (more portable for production)
     if os.path.exists(MODEL_JSON_PATH):
         try:
             model = xgb.Booster()
@@ -48,18 +46,7 @@ def load_model():
         except Exception as e:
             print(f"Error loading JSON model: {e}")
 
-    # Try Pickle as fallback
-    if os.path.exists(MODEL_PKL_PATH):
-        try:
-            with open(MODEL_PKL_PATH, 'rb') as f:
-                model = pickle.load(f)
-            model_source = "Pickle"
-            print(f"Successfully loaded model from {MODEL_PKL_PATH} using pickle")
-            return
-        except Exception as e:
-            print(f"Error loading Pickle model: {e}")
-
-    print("Warning: No model files found or failed to load. Running in simulated mode.")
+    print("Warning: model.json not found or failed to load. Running in simulated mode.")
 
 # Load model on startup
 load_model()

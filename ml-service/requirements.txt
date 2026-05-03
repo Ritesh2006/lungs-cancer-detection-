@@ -4,4 +4,3 @@ pydantic
 xgboost
 numpy
 gunicorn
-scikit-learn
