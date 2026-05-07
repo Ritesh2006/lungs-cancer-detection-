@@ -80,6 +80,30 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/lung-cancer
         console.log('Connected to MongoDB');
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
+            
+            // Keep-alive logic for production (Render/Koyeb/Railway)
+            const BACKEND_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+            if (BACKEND_URL) {
+                console.log(`[Keep-Alive] Self-pinging enabled for: ${BACKEND_URL}`);
+                setInterval(async () => {
+                    try {
+                        // Ping self
+                        await axios.get(`${BACKEND_URL}/health`);
+                        console.log('[Keep-Alive] Self-ping successful');
+                        
+                        // Ping ML Service if it's a different URL
+                        if (ML_SERVICE_URL && !ML_SERVICE_URL.includes('localhost')) {
+                            const mlHealthUrl = ML_SERVICE_URL.replace(/\/predict_risk$/, '') + '/health';
+                            await axios.get(mlHealthUrl);
+                            console.log('[Keep-Alive] ML Service ping successful');
+                        }
+                    } catch (err) {
+                        console.error('[Keep-Alive] Ping failed:', err.message);
+                    }
+                }, 14 * 60 * 1000); // Ping every 14 minutes
+            } else {
+                console.log('[Keep-Alive] Not enabled (set RENDER_EXTERNAL_URL or BACKEND_URL in env)');
+            }
         });
     })
     .catch((error) => {
