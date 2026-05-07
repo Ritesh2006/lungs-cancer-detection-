@@ -38,8 +38,18 @@ npm install
 npm run dev
 ```
 
-## Production Deployment
-- **Frontend**: Deploy the `frontend` folder to Vercel or Netlify.
-- **Backend**: Deploy the `backend` folder to Render or Railway. Set environment variables (`MONGO_URI`, `FRONTEND_URL`, etc.).
-- **ML Service**: Deploy the `ml-service` folder to Render (using Docker or Python environment) or AWS EC2.
-- **Ollama**: Hosting LLMs requires significant RAM/GPU. You can run it on a cloud GPU instance or use a paid API like Groq or Replicate in production.
+## Keep Awake (24/7 Production)
+
+Free hosting services like Render or Koyeb put services to "sleep" after inactivity. To keep PulmoAI awake 24/7:
+
+1. **Self-Pinging (Automatic)**:
+   - The backend now includes a self-pinging mechanism.
+   - In your Render/Railway dashboard, add an environment variable:
+     - `RENDER_EXTERNAL_URL`: `https://your-backend-app-name.onrender.com`
+   - This will make the backend ping itself every 14 minutes, preventing it from sleeping.
+
+2. **External Uptime Monitor (Recommended)**:
+   - Use a service like **[UptimeRobot](https://uptimerobot.com/)** or **[Cron-job.org](https://cron-job.org/)**.
+   - Create a monitor to ping: `https://your-backend-app-name.onrender.com/health`
+   - Set the interval to **every 5-10 minutes**.
+   - This ensures the model is always loaded and ready for users.
