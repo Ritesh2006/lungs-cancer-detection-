@@ -136,15 +136,14 @@ async def predict_risk(data: PatientData):
         else:
             prediction_prob = float(prediction)
             
-        # Calibration (Base score in model.json is 0.687275)
-        # To make it start from 0%, we normalize relative to this baseline
-        BASE_SCORE = 0.687275
-        if prediction_prob >= BASE_SCORE:
-            # Scale from 0 to 1 between BASE_SCORE and 1.0
-            calibrated_score = (prediction_prob - BASE_SCORE) / (1.0 - BASE_SCORE)
-        else:
-            # If for some reason it's below baseline, keep it near 0
-            calibrated_score = 0.0
+        # Calibration based on the model's actual prediction bounds:
+        # Minimum raw prediction (best case scenario): ~0.655767
+        # Maximum raw prediction (worst case scenario): ~0.918702
+        MIN_PRED = 0.655767
+        MAX_PRED = 0.918702
+        
+        # Scale to span the full [0, 1] range (0% to 100%)
+        calibrated_score = (prediction_prob - MIN_PRED) / (MAX_PRED - MIN_PRED)
             
         # Ensure it stays within [0, 1]
         calibrated_score = max(0.0, min(1.0, calibrated_score))
