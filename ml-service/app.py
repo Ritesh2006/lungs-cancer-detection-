@@ -34,7 +34,20 @@ def load_model():
         print("CRITICAL: XGBoost library not found.")
         return
 
-    # Load JSON model (more portable for production)
+    # Check for the PKL model first (user's real model upload)
+    MODEL_PKL_PATH = os.path.join(BASE_DIR, "best_xgb_model (1).pkl")
+    if os.path.exists(MODEL_PKL_PATH):
+        try:
+            import pickle
+            with open(MODEL_PKL_PATH, "rb") as f:
+                model = pickle.load(f)
+            model_source = "PKL"
+            print(f"Successfully loaded pickled model from {MODEL_PKL_PATH}")
+            return
+        except Exception as e:
+            print(f"Error loading PKL model: {e}")
+
+    # Fallback to JSON model (more portable for production)
     if os.path.exists(MODEL_JSON_PATH):
         try:
             model = xgb.Booster()
@@ -45,7 +58,7 @@ def load_model():
         except Exception as e:
             print(f"Error loading JSON model: {e}")
 
-    print("Warning: model.json not found or failed to load. Running in simulated mode.")
+    print("Warning: model file not found or failed to load. Running in simulated mode.")
 
 # Load model on startup
 load_model()
