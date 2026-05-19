@@ -23,7 +23,7 @@ app.add_middleware(
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_JSON_PATH = os.path.join(BASE_DIR, "model.json")
+MODEL_PKL_PATH = os.path.join(BASE_DIR, "model.pkl")
 
 model = None
 model_source = None
@@ -34,8 +34,7 @@ def load_model():
         print("CRITICAL: XGBoost library not found.")
         return
 
-    # Check for the PKL model first (user's real model upload)
-    MODEL_PKL_PATH = os.path.join(BASE_DIR, "best_xgb_model (1).pkl")
+    # Load the real pickled XGBoost model
     if os.path.exists(MODEL_PKL_PATH):
         try:
             import pickle
@@ -47,18 +46,7 @@ def load_model():
         except Exception as e:
             print(f"Error loading PKL model: {e}")
 
-    # Fallback to JSON model (more portable for production)
-    if os.path.exists(MODEL_JSON_PATH):
-        try:
-            model = xgb.Booster()
-            model.load_model(MODEL_JSON_PATH)
-            model_source = "JSON"
-            print(f"Successfully loaded model from {MODEL_JSON_PATH}")
-            return
-        except Exception as e:
-            print(f"Error loading JSON model: {e}")
-
-    print("Warning: model file not found or failed to load. Running in simulated mode.")
+    print("Warning: model.pkl not found or failed to load. Running in simulated mode.")
 
 # Load model on startup
 load_model()
